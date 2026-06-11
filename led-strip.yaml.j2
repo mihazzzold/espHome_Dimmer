@@ -1,5 +1,5 @@
 {# =============================================================================
-   Гиммер — точка входа (led-strip.yaml.j2)
+   Диммер — точка входа (led-strip.yaml.j2)
    Управление адресной лентой WS2812B: ВКЛ/ВЫКЛ + расписание
    =============================================================================
    1) runtime.yaml.j2     — платформа: Wi-Fi, API, OTA
@@ -13,7 +13,7 @@
 {% if (friendly_name_override | default("") | trim) %}
 {% set friendly_name = friendly_name_override | trim %}
 {% else %}
-{% set friendly_name = ("Гиммер · " ~ name_suffix) if name_suffix else "Гиммер LED Strip" %}
+{% set friendly_name = ("Диммер · " ~ name_suffix) if name_suffix else "Диммер LED Strip" %}
 {% endif %}
 {% if use_wifi_secrets | default(true) %}
 {% set ap_ssid_suffix = name_suffix if name_suffix else device_name %}
@@ -31,17 +31,23 @@
 {% set _bp = board_profile | default({}) %}
 {% set chip_family = chip_family | default(_bp.get("chip_family") | default("esp32")) %}
 {% set ota_hw = (ota_channel | default(_bp.get("ota_channel") | default("esp32c3"))) | string %}
-{% set ota_project = ota_project | default(github_owner ~ ".espHome_Gimmer." ~ ota_hw) %}
-{% set wifi_ap_prefix = "gimmer" %}
+{% set ota_project = ota_project | default(github_owner ~ ".espHome_Dimmer." ~ ota_hw) %}
+{% set wifi_ap_prefix = "dimmer" %}
 {% set zigbee_enabled = false %}
 {# USB_SERIAL_JTAG доступен только на C3/C6/S3. #}
 {% if (ota_hw | string) in ("esp32c3", "esp32c6", "esp32s3") %}
 {% set logger_hardware_uart = "USB_SERIAL_JTAG" %}
 {% endif %}
+{# Тип ленты: addressable (WS2812B) | pwm_mono (одноцветная) | pwm_rgb (RGB без адресации) #}
+{% set led_type = led_type | default("addressable") %}
 {# LED-лента: пин из board_profile или явного параметра #}
 {% set led_pin = led_strip_pin | default(_bp.get("led_strip_pin") | default("GPIO5")) %}
-{# Количество светодиодов — задаётся при прошивке или остаётся по умолчанию 30 #}
+{# Количество светодиодов — только для addressable, игнорируется при PWM #}
 {% set led_count = led_count | default(30) %}
+{# PWM RGB: пины R/G/B из board_profile или явно #}
+{% set led_r_pin = led_r_pin | default(_bp.get("led_r_pin") | default("GPIO5")) %}
+{% set led_g_pin = led_g_pin | default(_bp.get("led_g_pin") | default("GPIO6")) %}
+{% set led_b_pin = led_b_pin | default(_bp.get("led_b_pin") | default("GPIO7")) %}
 {# Время: homeassistant (если есть HA) или sntp (автономно) #}
 {% set use_ha_time = use_ha_time | default(true) %}
 

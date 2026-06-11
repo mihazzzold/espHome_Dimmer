@@ -4,7 +4,7 @@
 
 time:
   - platform: {{ "homeassistant" if use_ha_time else "sntp" }}
-    id: gimmer_time
+    id: dimmer_time
 {% if not use_ha_time %}
     timezone: "Europe/Moscow"
     servers:
@@ -12,6 +12,77 @@ time:
       - time.google.com
 {% endif %}
 
+{% if led_type == "pwm_mono" %}
+output:
+  - platform: {{ "pwm" if chip_family == "esp8266" else "ledc" }}
+    pin: {{ led_pin }}
+    id: output_mono
+    frequency: "1000Hz"
+
+light:
+  - platform: monochromatic
+    output: output_mono
+    id: led_strip
+    name: "{{ 'LED Strip' if _en else 'LED лента' }}"
+    icon: "mdi:led-strip-variant"
+    restore_mode: RESTORE_DEFAULT_OFF
+    effects:
+      - pulse:
+          name: "{{ 'Pulse' if _en else 'Пульсация' }}"
+          transition_length: 1s
+          update_interval: 2s
+      - strobe:
+          name: "{{ 'Strobe' if _en else 'Стробоскоп' }}"
+          duration: 100ms
+          on_length: 50ms
+      - flicker:
+          name: "{{ 'Flicker' if _en else 'Мерцание' }}"
+          alpha: 95%
+          intensity: 1.5%
+
+{% elif led_type == "pwm_rgb" %}
+output:
+  - platform: {{ "pwm" if chip_family == "esp8266" else "ledc" }}
+    pin: {{ led_r_pin }}
+    id: output_r
+    frequency: "1000Hz"
+  - platform: {{ "pwm" if chip_family == "esp8266" else "ledc" }}
+    pin: {{ led_g_pin }}
+    id: output_g
+    frequency: "1000Hz"
+  - platform: {{ "pwm" if chip_family == "esp8266" else "ledc" }}
+    pin: {{ led_b_pin }}
+    id: output_b
+    frequency: "1000Hz"
+
+light:
+  - platform: rgb
+    red: output_r
+    green: output_g
+    blue: output_b
+    id: led_strip
+    name: "{{ 'LED Strip' if _en else 'LED лента' }}"
+    icon: "mdi:led-strip-variant"
+    restore_mode: RESTORE_DEFAULT_OFF
+    effects:
+      - pulse:
+          name: "{{ 'Pulse' if _en else 'Пульсация' }}"
+          transition_length: 1s
+          update_interval: 2s
+      - strobe:
+          name: "{{ 'Strobe' if _en else 'Стробоскоп' }}"
+          duration: 100ms
+          on_length: 50ms
+      - flicker:
+          name: "{{ 'Flicker' if _en else 'Мерцание' }}"
+          alpha: 95%
+          intensity: 1.5%
+      - random:
+          name: "{{ 'Random' if _en else 'Случайный цвет' }}"
+          transition_length: 500ms
+          update_interval: 5s
+
+{% else %}{# addressable — WS2812B/NeoPixel (по умолчанию) #}
 light:
   - platform: neopixelbus
     type: GRB
@@ -44,6 +115,8 @@ light:
           transition_length: 1s
           update_interval: 2s
 
+{% endif %}
+
 script:
   # Проверяет расписание и переключает ленту если нужно.
   # Вызывается каждые 30 с из interval, и сразу при изменении настроек.
@@ -52,7 +125,7 @@ script:
     then:
       - lambda: |-
           if (!id(schedule_enabled_flag)) return;
-          auto now = id(gimmer_time).now();
+          auto now = id(dimmer_time).now();
           if (!now.is_valid()) return;
           int cur   = now.hour * 60 + now.minute;
           int on_t  = id(sched_on_hour)  * 60 + id(sched_on_minute);
