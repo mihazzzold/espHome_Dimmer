@@ -1,0 +1,81 @@
+# =============================================================================
+# БИЗНЕС-ЛОГИКА — LED-лента и расписание
+# =============================================================================
+
+time:
+  - platform: {{ "homeassistant" if use_ha_time else "sntp" }}
+    id: gimmer_time
+{% if not use_ha_time %}
+    timezone: "Europe/Moscow"
+    servers:
+      - pool.ntp.org
+      - time.google.com
+{% endif %}
+
+light:
+  - platform: neopixelbus
+    type: GRB
+    variant: WS2812X
+    pin: {{ led_pin }}
+    num_leds: {{ led_count }}
+    id: led_strip
+    name: "{{ 'LED Strip' if _en else 'LED лента' }}"
+    icon: "mdi:led-strip-variant"
+    restore_mode: RESTORE_DEFAULT_OFF
+    effects:
+      - addressable_rainbow:
+          name: "{{ 'Rainbow' if _en else 'Радуга' }}"
+          speed: 10
+          width: 50
+      - addressable_color_wipe:
+          name: "{{ 'Color Wipe' if _en else 'Бегущий огонь' }}"
+      - addressable_twinkle:
+          name: "{{ 'Twinkle' if _en else 'Мерцание' }}"
+          twinkle_probability: 5%
+          progress_interval: 4ms
+      - addressable_scan:
+          name: "{{ 'Scanner' if _en else 'Бегающий огонёк' }}"
+          move_interval: 80ms
+          scan_width: 2
+      - addressable_fireworks:
+          name: "{{ 'Fireworks' if _en else 'Фейерверк' }}"
+      - pulse:
+          name: "{{ 'Pulse' if _en else 'Пульсация' }}"
+          transition_length: 1s
+          update_interval: 2s
+
+script:
+  # Проверяет расписание и переключает ленту если нужно.
+  # Вызывается каждые 30 с из interval, и сразу при изменении настроек.
+  - id: schedule_check
+    mode: single
+    then:
+      - lambda: |-
+          if (!id(schedule_enabled_flag)) return;
+          auto now = id(gimmer_time).now();
+          if (!now.is_valid()) return;
+          int cur   = now.hour * 60 + now.minute;
+          int on_t  = id(sched_on_hour)  * 60 + id(sched_on_minute);
+          int off_t = id(sched_off_hour) * 60 + id(sched_off_minute);
+          bool should_be_on;
+          if (on_t < off_t) {
+            // Обычный диапазон: напр. 08:00 → 22:00
+            should_be_on = (cur >= on_t && cur < off_t);
+          } else if (on_t > off_t) {
+            // Через полночь: напр. 22:00 → 07:00
+            should_be_on = (cur >= on_t || cur < off_t);
+          } else {
+            // on == off — расписание бессмысленно, ничего не делаем
+            should_be_on = false;
+          }
+          auto call = id(led_strip).make_call();
+          call.set_state(should_be_on);
+          call.perform();
+
+interval:
+{% if chip_family != "esp8266" %}
+{% include "interval_ota_sync.yaml.j2" %}
+{% endif %}
+  - interval: 30s
+    then:
+      - script.execute: schedule_check

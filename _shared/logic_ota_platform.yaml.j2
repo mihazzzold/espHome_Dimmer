@@ -1,0 +1,12 @@
+  # Фрагмент для вставки ВНУТРЬ блока script: (не отдельный ключ script: в YAML)
+  # Ручная проверка обновлений — кнопка «OTA: проверить обновления» в maintenance
+  - id: check_firmware_update
+    mode: restart
+    then:
+      - lambda: |-
+          id(ota_status) = id(ui_lang_idx) == 0 ? "{{ ota_msg_checking_ru }}" : "{{ ota_msg_checking_en }}";
+          id(ota_last_error) = "";
+          id(ota_status_text).publish_state(id(ota_status));
+          id(ota_error_text).publish_state(id(ota_last_error));
+      - update.check:
+          id: firmware_update

@@ -1,0 +1,13 @@
+  - id: available_version
+    type: std::string
+    restore_value: no
+    initial_value: '"{{ firmware_version }}"'
+  - id: ota_status
+    type: std::string
+    restore_value: no
+    initial_value: '"{{ ota_idle }}"'
+  - id: ota_last_error
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+{% include "onboarding_globals_entries.yaml.j2" %}

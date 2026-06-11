@@ -1,0 +1,54 @@
+{# =============================================================================
+   Гиммер — точка входа (led-strip.yaml.j2)
+   Управление адресной лентой WS2812B: ВКЛ/ВЫКЛ + расписание
+   =============================================================================
+   1) runtime.yaml.j2     — платформа: Wi-Fi, API, OTA
+   2) logic.yaml.j2       — БИЗНЕС: лента, расписание
+   3) maintenance.yaml.j2 — globals, настройки расписания, OTA
+   4) diagnostics.yaml.j2 — uptime, RSSI, heap
+   ============================================================================= #}
+{% set device_name = serial_number | default("led-strip") %}
+{% set _sn = serial_number | default("") | string %}
+{% set name_suffix = (_sn.split("-")[-1]) if ("-" in _sn) else ((_sn[-4:]) if (_sn | length) >= 4 else _sn) %}
+{% if (friendly_name_override | default("") | trim) %}
+{% set friendly_name = friendly_name_override | trim %}
+{% else %}
+{% set friendly_name = ("Гиммер · " ~ name_suffix) if name_suffix else "Гиммер LED Strip" %}
+{% endif %}
+{% if use_wifi_secrets | default(true) %}
+{% set ap_ssid_suffix = name_suffix if name_suffix else device_name %}
+{% else %}
+{% set ap_ssid_suffix = "provision" %}
+{% endif %}
+{% set ap_ssid_slug = (ap_ssid_suffix | string | replace("_", "-"))[:24] %}
+{% set firmware_version = build_version | default("0.1.0") %}
+{% set ui_lang = ui_lang | default("ru") %}
+{% set _ul = (ui_lang | string | lower) %}
+{% set _en = (_ul == "en") %}
+{% include "labels_common.yaml.j2" %}
+{% set github_owner = github_owner | default("mihazzzold") %}
+{% set ota_base_url = ota_base_url | default("https://ota-s3.m3zold-lab.tech/firmware") %}
+{% set _bp = board_profile | default({}) %}
+{% set chip_family = chip_family | default(_bp.get("chip_family") | default("esp32")) %}
+{% set ota_hw = (ota_channel | default(_bp.get("ota_channel") | default("esp32c3"))) | string %}
+{% set ota_project = ota_project | default(github_owner ~ ".espHome_Gimmer." ~ ota_hw) %}
+{% set wifi_ap_prefix = "gimmer" %}
+{% set zigbee_enabled = false %}
+{# USB_SERIAL_JTAG доступен только на C3/C6/S3. #}
+{% if (ota_hw | string) in ("esp32c3", "esp32c6", "esp32s3") %}
+{% set logger_hardware_uart = "USB_SERIAL_JTAG" %}
+{% endif %}
+{# LED-лента: пин из board_profile или явного параметра #}
+{% set led_pin = led_strip_pin | default(_bp.get("led_strip_pin") | default("GPIO5")) %}
+{# Количество светодиодов — задаётся при прошивке или остаётся по умолчанию 30 #}
+{% set led_count = led_count | default(30) %}
+{# Время: homeassistant (если есть HA) или sntp (автономно) #}
+{% set use_ha_time = use_ha_time | default(true) %}
+
+{% include "_includes/runtime.yaml.j2" %}
+
+{% include "_includes/logic.yaml.j2" %}
+
+{% include "_includes/maintenance.yaml.j2" %}
+
+{% include "_includes/diagnostics.yaml.j2" %}

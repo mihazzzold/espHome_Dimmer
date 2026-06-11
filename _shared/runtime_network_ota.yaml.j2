@@ -1,0 +1,88 @@
+{# =============================================================================
+   Платформа: Wi‑Fi, captive portal, API, OTA, update.http_request (manifest на сервере).
+   Перед include задайте: wifi_ap_prefix, ap_ssid_slug, ota_base_url, ota_project.
+   Бизнес-логики устройства (реле, моторы и т.д.) здесь НЕТ.
+   ============================================================================= #}
+{% if use_wifi_secrets | default(true) %}
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid
+      password: !secret wifi_password
+  fast_connect: true
+  ap:
+    ssid: "{{ wifi_ap_prefix }}-{{ ap_ssid_slug }}-setup"
+    password: !secret ap_password
+    ap_timeout: 45s
+  reboot_timeout: 0s
+  power_save_mode: NONE
+{% else %}
+wifi:
+  ap:
+    ssid: "{{ wifi_ap_prefix }}-{{ ap_ssid_slug }}-setup"
+    password: !secret ap_password
+  reboot_timeout: 0s
+  power_save_mode: NONE
+{% endif %}
+
+captive_portal:
+
+{% if status_led_pin is defined and (use_status_led | default(true)) %}
+status_led:
+  pin: {{ status_led_pin }}
+{% endif %}
+
+logger:
+  level: {{ logger_level | default("INFO") }}
+{% if logger_hardware_uart is defined %}
+  hardware_uart: {{ logger_hardware_uart }}
+{% endif %}
+
+{% if chip_family == "esp8266" %}
+debug:
+  update_interval: 30s
+{% elif not (zigbee_enabled | default(false)) %}
+debug:
+  update_interval: 10s
+{% endif %}
+improv_serial:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  reboot_timeout: 0s
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+{% if chip_family != "esp8266" %}
+  - platform: http_request
+    id: ota_http_request
+
+http_request:
+  id: http_client
+  timeout: 120s
+  buffer_size_rx: 8192
+  buffer_size_tx: 2048
+  verify_ssl: {{ "false" if (ota_skip_ssl_verify | default(false)) else "true" }}
+
+update:
+  - platform: http_request
+    id: firmware_update
+    name: "{{ name_fw_managed_update }}"
+    icon: "mdi:chip"
+    device_class: firmware
+    entity_category: config
+    ota_id: ota_http_request
+    http_request_id: http_client
+    source: "{{ ota_base_url }}/{{ ota_project }}/manifest.json"
+    update_interval: 6h
+    on_update_available:
+      then:
+        - lambda: |-
+            id(available_version) = x.latest_version;
+            id(available_version_text).publish_state(id(available_version));
+            id(ota_status) = (id(ui_lang_idx) == 0 ? std::string("{{ ota_msg_update_prefix_ru }}") : std::string("{{ ota_msg_update_prefix_en }}")) + x.latest_version;
+            id(ota_last_error) = "";
+            id(ota_status_text).publish_state(id(ota_status));
+            id(ota_error_text).publish_state(id(ota_last_error));
+{% endif %}

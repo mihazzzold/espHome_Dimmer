@@ -1,0 +1,10 @@
+  # ui_lang_idx: 0=русский, 1=english — влияет на тексты OTA в lambda (не на все имена сущностей в HA)
+  - id: ui_lang_idx
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  # false = показать в HA «нужна первичная настройка» до нажатия кнопки «Завершить»
+  - id: setup_wizard_done
+    type: bool
+    restore_value: yes
+    initial_value: 'false'

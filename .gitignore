@@ -1,0 +1,8 @@
+secrets.yaml
+*.log
+tmp_compile/
+.esphome/
+.*.yaml
+*.yaml.bat
+ota-*.bin
+serial-*.bin

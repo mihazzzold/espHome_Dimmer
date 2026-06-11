@@ -1,0 +1,17 @@
+# =============================================================================
+# MAINTENANCE — OTA, SETUP, кнопки (не бизнес-логика устройства)
+# =============================================================================
+# Подключать после logic*.yaml.j2 (нужны script check_firmware_update из logic_ota_platform).
+# =============================================================================
+
+globals:
+{% include "ota_globals_entries.yaml.j2" %}
+
+select:
+{% include "onboarding_select_entry.yaml.j2" %}
+
+text_sensor:
+{% include "ota_text_sensor_entries.yaml.j2" %}
+
+button:
+{% include "ota_button_entries.yaml.j2" %}

@@ -1,0 +1,122 @@
+# =============================================================================
+# MAINTENANCE — globals, расписание, OTA
+# =============================================================================
+
+globals:
+{% include "ota_globals_entries.yaml.j2" %}
+  # --- Расписание: время включения ---
+  - id: sched_on_hour
+    type: int
+    restore_value: yes
+    initial_value: '8'
+  - id: sched_on_minute
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  # --- Расписание: время выключения ---
+  - id: sched_off_hour
+    type: int
+    restore_value: yes
+    initial_value: '22'
+  - id: sched_off_minute
+    type: int
+    restore_value: yes
+    initial_value: '0'
+  # --- Флаг: расписание активно ---
+  - id: schedule_enabled_flag
+    type: bool
+    restore_value: yes
+    initial_value: 'false'
+
+number:
+  # --- Время включения ---
+  - platform: template
+    id: num_on_hour
+    name: "{{ 'Schedule: on hour' if _en else 'Расписание: включение (ч)' }}"
+    icon: "mdi:clock-start"
+    entity_category: config
+    min_value: 0
+    max_value: 23
+    step: 1
+    unit_of_measurement: "ч"
+    lambda: "return (float)id(sched_on_hour);"
+    set_action:
+      - lambda: "id(sched_on_hour) = (int)x;"
+      - script.execute: schedule_check
+
+  - platform: template
+    id: num_on_minute
+    name: "{{ 'Schedule: on minute' if _en else 'Расписание: включение (мин)' }}"
+    icon: "mdi:clock-start"
+    entity_category: config
+    min_value: 0
+    max_value: 59
+    step: 1
+    unit_of_measurement: "мин"
+    lambda: "return (float)id(sched_on_minute);"
+    set_action:
+      - lambda: "id(sched_on_minute) = (int)x;"
+      - script.execute: schedule_check
+
+  # --- Время выключения ---
+  - platform: template
+    id: num_off_hour
+    name: "{{ 'Schedule: off hour' if _en else 'Расписание: выключение (ч)' }}"
+    icon: "mdi:clock-end"
+    entity_category: config
+    min_value: 0
+    max_value: 23
+    step: 1
+    unit_of_measurement: "ч"
+    lambda: "return (float)id(sched_off_hour);"
+    set_action:
+      - lambda: "id(sched_off_hour) = (int)x;"
+      - script.execute: schedule_check
+
+  - platform: template
+    id: num_off_minute
+    name: "{{ 'Schedule: off minute' if _en else 'Расписание: выключение (мин)' }}"
+    icon: "mdi:clock-end"
+    entity_category: config
+    min_value: 0
+    max_value: 59
+    step: 1
+    unit_of_measurement: "мин"
+    lambda: "return (float)id(sched_off_minute);"
+    set_action:
+      - lambda: "id(sched_off_minute) = (int)x;"
+      - script.execute: schedule_check
+
+switch:
+  # Включить/выключить расписание. При включении — сразу проверяем.
+  - platform: template
+    id: schedule_enabled
+    name: "{{ 'Schedule enabled' if _en else 'Расписание активно' }}"
+    icon: "mdi:calendar-clock"
+    entity_category: config
+    restore_mode: RESTORE_DEFAULT_OFF
+    lambda: "return id(schedule_enabled_flag);"
+    turn_on_action:
+      - lambda: "id(schedule_enabled_flag) = true;"
+      - script.execute: schedule_check
+    turn_off_action:
+      - lambda: "id(schedule_enabled_flag) = false;"
+
+  - platform: restart
+    name: "{{ 'Restart' if _en else 'SYS: перезагрузка' }}"
+
+select:
+{% include "onboarding_select_entry.yaml.j2" %}
+
+text_sensor:
+  - platform: template
+    id: serial_text
+    name: "Serial Number"
+    icon: "mdi:identifier"
+    lambda: |-
+      return {"{{ serial_number | default('UNKNOWN') }}"};
+    update_interval: never
+{% include "ota_text_sensor_entries.yaml.j2" %}
+
+button:
+{% include "ota_button_entries.yaml.j2" %}

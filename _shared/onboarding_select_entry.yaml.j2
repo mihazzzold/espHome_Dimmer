@@ -1,0 +1,18 @@
+  # Выбор языка для сообщений OTA на устройстве (имена TANK:/REL: задаются при сборке прошивки)
+  - platform: template
+    id: setup_ui_lang
+    name: "{{ name_setup_lang }}"
+    icon: "mdi:translate"
+    entity_category: config
+    options:
+      - "{{ setup_opt_lang_ru }}"
+      - "{{ setup_opt_lang_en }}"
+    lambda: |-
+      return id(ui_lang_idx) == 0 ? std::string("{{ setup_opt_lang_ru }}") : std::string("{{ setup_opt_lang_en }}");
+    set_action:
+      - lambda: |-
+          if (x == "{{ setup_opt_lang_ru }}") {
+            id(ui_lang_idx) = 0;
+          } else {
+            id(ui_lang_idx) = 1;
+          }

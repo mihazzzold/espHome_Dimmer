@@ -1,0 +1,8 @@
+      # При каждом старте ESP: синхронизировать text_sensor OTA с переменными globals
+      - lambda: |-
+          id(available_version_text).publish_state(id(available_version));
+          id(ota_status_text).publish_state(id(ota_status));
+          id(ota_error_text).publish_state(id(ota_last_error));
+      # template + update_interval never — без update/publish HA показывает «Неизвестно»
+      - component.update: current_version_text
+

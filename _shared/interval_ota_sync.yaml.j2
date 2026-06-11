@@ -1,0 +1,28 @@
+  # Фрагмент для вставки ВНУТРЬ блока interval: (первый пункт списка)
+  # Копирует ошибки компонента update.http_request в text_sensor OTA для Home Assistant
+  - interval: 3s
+    then:
+      - lambda: |-
+          static bool prev_err = false;
+          const bool err = id(firmware_update).status_has_error();
+          if (err == prev_err)
+            return;
+          prev_err = err;
+          if (err) {
+            id(ota_status) = id(ui_lang_idx) == 0 ? "{{ ota_msg_check_error_status_ru }}" : "{{ ota_msg_check_error_status_en }}";
+            id(ota_last_error) = id(ui_lang_idx) == 0 ? "{{ ota_msg_check_error_detail_ru }}" : "{{ ota_msg_check_error_detail_en }}";
+            id(ota_status_text).publish_state(id(ota_status));
+            id(ota_error_text).publish_state(id(ota_last_error));
+          } else {
+            const std::string err_status_ru = "{{ ota_msg_check_error_status_ru }}";
+            const std::string err_status_en = "{{ ota_msg_check_error_status_en }}";
+            if (id(ota_status) == err_status_ru || id(ota_status) == err_status_en) {
+              id(ota_status) = id(ui_lang_idx) == 0 ? "{{ ota_msg_check_in_progress_ru }}" : "{{ ota_msg_check_in_progress_en }}";
+              id(ota_last_error) = "";
+              id(ota_status_text).publish_state(id(ota_status));
+              id(ota_error_text).publish_state(id(ota_last_error));
+            } else {
+              id(ota_last_error) = "";
+              id(ota_error_text).publish_state(id(ota_last_error));
+            }
+          }

@@ -1,0 +1,30 @@
+{% if chip_family == "esp8266" %}
+  - platform: debug
+    loop_time:
+      name: "{{ name_diag_loop }}"
+      entity_category: diagnostic
+    free:
+      name: "{{ name_diag_heap }}"
+      entity_category: diagnostic
+{% else %}
+{% if not (zigbee_enabled | default(false)) %}
+  - platform: debug
+    free:
+      name: "{{ name_diag_heap_free }}"
+      disabled_by_default: true
+    block:
+      name: "{{ name_diag_heap_block }}"
+      disabled_by_default: true
+{% endif %}
+  - platform: uptime
+    name: "{{ name_diag_uptime }}"
+    id: diagnostics_uptime
+    update_interval: 30s
+    entity_category: diagnostic
+
+  - platform: wifi_signal
+    name: "{{ name_diag_rssi }}"
+    id: diagnostics_wifi_rssi
+    update_interval: 30s
+    entity_category: diagnostic
+{% endif %}

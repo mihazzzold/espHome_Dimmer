@@ -1,0 +1,11 @@
+  # Подсказка в HA: пройден ли мастер (читать после выбора языка и нажатия «Завершить»)
+  - platform: template
+    id: setup_wizard_status
+    name: "{{ name_setup_status }}"
+    icon: "mdi:clipboard-check-outline"
+    entity_category: diagnostic
+    update_interval: 5s
+    lambda: |-
+      if (id(setup_wizard_done))
+        return id(ui_lang_idx) == 0 ? std::string("{{ setup_status_done_ru }}") : std::string("{{ setup_status_done_en }}");
+      return id(ui_lang_idx) == 0 ? std::string("{{ setup_status_pending_ru }}") : std::string("{{ setup_status_pending_en }}");

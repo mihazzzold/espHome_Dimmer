@@ -1,0 +1,14 @@
+# =============================================================================
+# Устаревший минимальный блок (только OTA, без SETUP select).
+# Для штор/станции/реле — maintenance_standard.yaml.j2 или _includes/maintenance.yaml.j2.
+# Увлажнитель — свой _includes/maintenance.yaml.j2 (OTA + NET + Zigbee).
+# =============================================================================
+globals:
+{% include "ota_globals_entries.yaml.j2" %}
+
+text_sensor:
+{% include "ota_text_sensor_entries.yaml.j2" %}
+
+button:
+{% include "ota_button_entries.yaml.j2" %}
+

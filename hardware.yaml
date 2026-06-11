@@ -1,0 +1,92 @@
+version: 1
+title: "Гиммер — адресная LED-лента WS2812B"
+notes: |
+  Поддерживаемые платы: ESP32 (classic), ESP32-C3, ESP32-C6, ESP8266 NodeMCU.
+  ESP32-H2 НЕ поддерживается (нет Wi-Fi; используйте C3/C6/ESP32 для этого проекта).
+
+  Параметры прошивки:
+    led_count      — количество светодиодов (по умолчанию 30)
+    led_strip_pin  — пин данных (берётся из board_profile, можно переопределить)
+    use_ha_time    — true (время из Home Assistant) / false (SNTP, автономно)
+    framework_type — arduino (по умолчанию) / esp-idf (ESP32-C6)
+
+  После прошивки в Home Assistant появятся сущности:
+    light.led_лента            — управление лентой (цвет, яркость, эффект, вкл/выкл)
+    switch.расписание_активно  — включить/выключить расписание
+    number.расписание_включение_ч/мин   — час и минута включения
+    number.расписание_выключение_ч/мин  — час и минута выключения
+
+boards:
+  esp32-supermini:
+    title: "ESP32 (классический, WROOM-32)"
+    flash_connect: |
+      Micro-USB через CP2102/CH340. Framework: arduino.
+    connections:
+      - pin: GPIO13
+        role: led_data
+        label: "Data WS2812B"
+        connect: "DIN ленты → GPIO13 (через резистор 300–500 Ом)"
+      - pin: GND
+        role: power
+        label: "GND"
+        connect: "GND ленты → GND платы (общий минус)"
+      - pin: 5V/ext
+        role: power
+        label: "5V питание"
+        connect: "5V ленты → внешний БП (при > 10 LED не питать от платы)"
+
+  esp32c3-supermini:
+    title: "ESP32-C3 SuperMini"
+    flash_connect: |
+      USB-C к ПК. Framework: arduino. Logger: USB_SERIAL_JTAG.
+    connections:
+      - pin: GPIO5
+        role: led_data
+        label: "Data WS2812B"
+        connect: "DIN ленты → GPIO5 (через резистор 300–500 Ом)"
+      - pin: GND
+        role: power
+        label: "GND"
+        connect: "GND ленты → GND платы"
+      - pin: 5V/ext
+        role: power
+        label: "5V питание"
+        connect: "5V ленты → внешний БП"
+
+  esp32c6-supermini:
+    title: "ESP32-C6 SuperMini (Wi-Fi 6)"
+    flash_connect: |
+      USB-C к ПК. Framework: arduino (рекомендуется для neopixelbus RMT).
+      Logger: USB_SERIAL_JTAG.
+    connections:
+      - pin: GPIO10
+        role: led_data
+        label: "Data WS2812B"
+        connect: "DIN ленты → GPIO10 (через резистор 300–500 Ом)"
+      - pin: GND
+        role: power
+        label: "GND"
+        connect: "GND ленты → GND платы"
+      - pin: 5V/ext
+        role: power
+        label: "5V питание"
+        connect: "5V ленты → внешний БП"
+
+  esp8266-nodemcu:
+    title: "ESP8266 NodeMCU v2"
+    flash_connect: |
+      Micro-USB через CH340. Framework: arduino.
+      GPIO4 (D2) используется для данных — не конфликтует с UART0 логгера.
+    connections:
+      - pin: GPIO4 (D2)
+        role: led_data
+        label: "Data WS2812B"
+        connect: "DIN ленты → GPIO4/D2 (через резистор 300–500 Ом)"
+      - pin: GND
+        role: power
+        label: "GND"
+        connect: "GND ленты → GND платы"
+      - pin: 5V/ext
+        role: power
+        label: "5V питание"
+        connect: "5V ленты → внешний БП (ESP8266 не тянет больше 2-3 LED напрямую)"

@@ -1,0 +1,9 @@
+  # Нажать после выбора языка и нужных параметров — скрывает «нужна настройка» в статусе
+  - platform: template
+    id: setup_wizard_finish
+    name: "{{ name_setup_finish }}"
+    icon: "mdi:check-circle-outline"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(setup_wizard_done) = true;

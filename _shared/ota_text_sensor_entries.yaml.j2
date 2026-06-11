@@ -1,0 +1,44 @@
+  - platform: wifi_info
+    dns_address:
+      name: "{{ name_net_dns }}"
+      disabled_by_default: true
+      entity_category: diagnostic
+{% if chip_family == "esp8266" %}
+  - platform: debug
+    reset_reason:
+      name: "{{ name_diag_reset_reason }}"
+      entity_category: diagnostic
+{% else %}
+  - platform: version
+    name: "{{ name_diag_esphome }}"
+    hide_timestamp: true
+    entity_category: diagnostic
+{% endif %}
+  - platform: template
+    id: current_version_text
+    name: "{{ name_fw_current }}"
+    entity_category: diagnostic
+    update_interval: never
+    lambda: |-
+      return std::string("{{ firmware_version }}");
+
+  - platform: template
+    id: available_version_text
+    name: "{{ name_fw_available }}"
+    entity_category: diagnostic
+    update_interval: never
+
+  - platform: template
+    id: ota_status_text
+    name: "{{ name_ota_status }}"
+    icon: "mdi:information-outline"
+    entity_category: diagnostic
+    update_interval: never
+
+  - platform: template
+    id: ota_error_text
+    name: "{{ name_ota_err }}"
+    icon: "mdi:alert-circle-outline"
+    entity_category: diagnostic
+    update_interval: never
+{% include "onboarding_text_sensor_entry.yaml.j2" %}
