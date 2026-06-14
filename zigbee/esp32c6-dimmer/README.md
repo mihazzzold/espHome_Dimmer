@@ -1,4 +1,4 @@
-# ESP32-C6 Гиммер Zigbee — Color Dimmable Light
+# ESP32-C6 Диммер Zigbee — Color Dimmable Light
 
 [![Status](https://img.shields.io/badge/status-ready-green.svg)](../README.md) [![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v5.2.2-blue.svg)](https://docs.espressif.com/projects/esp-idf/) [![Zigbee](https://img.shields.io/badge/Zigbee-esp--zigbee--lib%20%5E1.6.3-orange.svg)](https://github.com/espressif/esp-zigbee-sdk)
 
@@ -9,8 +9,8 @@ Zigbee-прошивка для **адресной LED-ленты WS2812B** на 
 - Яркость (0–100%)
 - Цвет (Hue / Saturation)
 
-> Wi-Fi версия с расписанием: [`firmwares/ci-overrides/mihazzzold.espHome_Gimmer/`](../../ci-overrides/mihazzzold.espHome_Gimmer/)  
-> H2 вариант (Zigbee-only): [`firmwares/zigbee/esp32h2-gimmer/`](../esp32h2-gimmer/)
+> Wi-Fi версия с расписанием: [`firmwares/ci-overrides/mihazzzold.espHome_Dimmer/`](../../ci-overrides/mihazzzold.espHome_Dimmer/)  
+> H2 вариант (Zigbee-only): [`firmwares/zigbee/esp32h2-dimmer/`](../esp32h2-dimmer/)
 
 ## Подключение
 
@@ -39,7 +39,7 @@ eim install --non-interactive true --idf-versions v5.2.2 --target esp32c6 --path
 ## Сборка и прошивка
 
 ```powershell
-cd firmwares/zigbee/esp32c6-gimmer
+cd firmwares/zigbee/esp32c6-dimmer
 eim run "idf.py set-target esp32c6" v5.2.2
 eim run "idf.py build" v5.2.2
 eim run "idf.py -p COM5 flash monitor" v5.2.2
@@ -56,7 +56,7 @@ eim run "idf.py -p COM5 flash monitor" v5.2.2
 ## Расписание
 
 В Zigbee-версии расписание настраивается **через Home Assistant Automations**, а не на устройстве.  
-Для расписания прямо на МК — используйте Wi-Fi версию (ESPHome Гиммер).
+Для расписания прямо на МК — используйте Wi-Fi версию (ESPHome Диммер).
 
 ## Архитектура кода
 

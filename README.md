@@ -1,4 +1,4 @@
-# 💡 espHome_Dimmer (Гиммер) — адресная LED-лента WS2812B
+# 💡 espHome_Dimmer (Диммер) — адресная LED-лента WS2812B
 
 > 📌 **Коротко:** умная LED-лента на **ESPHome** — **ESP32-C6** / **ESP32-C3** / классический **ESP32** / **ESP8266 NodeMCU**, лента **WS2812B**, управление из **Home Assistant** с расписанием включения/выключения, яркостью и цветом.
 
@@ -138,7 +138,7 @@ python scripts/flasher.py -f firmwares-external/espHome_Dimmer/led-strip.yaml.j2
 ```bash
 python scripts/flasher.py -f firmwares-external/espHome_Dimmer/led-strip.yaml.j2 -a run --port COM5 --board-profile esp32c6-supermini --wifi-provisioning --local -y
 ```
-Подключитесь к AP `gimmer-…-setup` и задайте сеть через captive portal.
+Подключитесь к AP `dimmer-…-setup` и задайте сеть через captive portal.
 
 ### 4.4. Параметры шаблона
 

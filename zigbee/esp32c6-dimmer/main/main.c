@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
-// Гиммер — Zigbee Color Dimmable Light на ESP32-H2 + WS2812B.
+// Диммер — Zigbee Color Dimmable Light на ESP32-C6 + WS2812B.
 //
-// ESP32-H2: только Zigbee/BLE (НЕТ Wi-Fi 802.11).
 // Профиль: HA Color Dimmable Light (device_id = 0x0102)
-// Кластеры: Basic, Identify, On/Off, Level Control, Color Control (HS)
-// Лента: WS2812B через RMT, GPIO12, 30 LED по умолчанию.
+// Кластеры: Basic, Identify, On/Off, Level Control, Color Control (HS+XY)
+// Лента: WS2812B через RMT, GPIO10, 30 LED по умолчанию.
 //
-// Отличие от C6-версии: только GPIO пин ленты (GPIO12 вместо GPIO10).
-// Код идентичен — разница только в LED_STRIP_GPIO.
+// Home Assistant / ZHA / Zigbee2MQTT распознают устройство как "Цветной свет".
+// Паринг: удержание кнопки GPIO9 > 5 с — сброс сети и новый поиск.
 
 #include <math.h>
 #include <string.h>
 
 #include "esp_check.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "led_strip.h"
@@ -26,10 +26,10 @@
 // ---------------------------------------------------------------------------
 // Конфигурация железа
 // ---------------------------------------------------------------------------
-#define LED_STRIP_GPIO       12          // GPIO12 на ESP32-H2 SuperMini
-#define LED_COUNT            30
-#define PAIR_BUTTON_GPIO     9           // Кнопка сброса (zigbee_action_button из board profile)
-#define PAIR_HOLD_MS         5000
+#define LED_STRIP_GPIO       10          // GPIO10 на ESP32-C6 SuperMini
+#define LED_COUNT            30          // Количество светодиодов
+#define PAIR_BUTTON_GPIO     9           // Кнопка сброса Zigbee-паринга
+#define PAIR_HOLD_MS         5000        // Держать > 5 с = сброс сети
 
 // ---------------------------------------------------------------------------
 // Конфигурация Zigbee
@@ -38,7 +38,7 @@
 #define ZIGBEE_CHANNEL_MASK  ESP_ZB_TRANSCEIVER_ALL_CHANNELS_MASK
 
 // ---------------------------------------------------------------------------
-static const char *TAG = "gimmer-h2";
+static const char *TAG = "dimmer-c6";
 
 // ---------------------------------------------------------------------------
 // Состояние ленты
@@ -46,19 +46,20 @@ static const char *TAG = "gimmer-h2";
 static led_strip_handle_t s_strip;
 
 static bool    s_on  = false;
-static uint8_t s_lvl = 254;
-static uint8_t s_hue = 0;
-static uint8_t s_sat = 0;
+static uint8_t s_lvl = 254;   // 0-254, Level Control
+static uint8_t s_hue = 0;     // 0-254 → 0-360° (Zigbee hue)
+static uint8_t s_sat = 0;     // 0-254 → 0-100% (Zigbee saturation)
 
 // ---------------------------------------------------------------------------
-// HSV → RGB
+// HSV → RGB (все значения 0-255)
 // ---------------------------------------------------------------------------
 static void hsv_to_rgb(uint8_t h8, uint8_t s8, uint8_t v8,
                         uint8_t *r, uint8_t *g, uint8_t *b)
 {
     if (s8 == 0) { *r = *g = *b = v8; return; }
-    uint16_t h = (uint16_t)h8 * 360 / 254;
-    uint8_t  s = s8, v = v8;
+    uint16_t h = (uint16_t)h8 * 360 / 254; // 0-359
+    uint8_t  s = s8;
+    uint8_t  v = v8;
     uint8_t  region  = h / 60;
     uint8_t  rem     = (h % 60) * 255 / 60;
     uint8_t  p = (uint16_t)v * (255 - s) / 255;
@@ -75,7 +76,7 @@ static void hsv_to_rgb(uint8_t h8, uint8_t s8, uint8_t v8,
 }
 
 // ---------------------------------------------------------------------------
-// Применить состояние к ленте
+// Применить текущее состояние к ленте
 // ---------------------------------------------------------------------------
 static void leds_apply(void)
 {
@@ -85,6 +86,7 @@ static void leds_apply(void)
         return;
     }
     uint8_t r, g, b;
+    // s_sat == 0 → белый свет (нейтральный)
     hsv_to_rgb(s_hue, s_sat, s_lvl, &r, &g, &b);
     for (int i = 0; i < LED_COUNT; i++) {
         led_strip_set_pixel(s_strip, i, r, g, b);
@@ -107,10 +109,10 @@ static void led_strip_init_hw(void)
         .flags.invert_out         = false,
     };
     led_strip_rmt_config_t rmt_cfg = {
-        .clk_src           = RMT_CLK_SRC_DEFAULT,
-        .resolution_hz     = 10 * 1000 * 1000,
+        .clk_src        = RMT_CLK_SRC_DEFAULT,
+        .resolution_hz  = 10 * 1000 * 1000, // 10 MHz
         .mem_block_symbols = 64,
-        .flags.with_dma    = false,
+        .flags.with_dma = false,
     };
     ESP_ERROR_CHECK(led_strip_new_rmt_device(&cfg, &rmt_cfg, &s_strip));
     led_strip_clear(s_strip);
@@ -136,7 +138,7 @@ static void pair_button_task(void *arg)
         if (gpio_get_level(PAIR_BUTTON_GPIO) == 0) {
             hold_ms += 100;
             if (hold_ms >= PAIR_HOLD_MS) {
-                ESP_LOGW(TAG, "Сброс Zigbee-сети (%lu мс)", hold_ms);
+                ESP_LOGW(TAG, "Сброс Zigbee-сети (кнопка удержана %lu мс)", hold_ms);
                 esp_zb_factory_reset();
                 hold_ms = 0;
             }
@@ -148,7 +150,7 @@ static void pair_button_task(void *arg)
 }
 
 // ---------------------------------------------------------------------------
-// Zigbee: обработчик атрибутов
+// Zigbee: обработчик изменения атрибутов
 // ---------------------------------------------------------------------------
 static esp_err_t zb_attr_handler(const esp_zb_zcl_set_attr_value_message_t *msg)
 {
@@ -171,10 +173,12 @@ static esp_err_t zb_attr_handler(const esp_zb_zcl_set_attr_value_message_t *msg)
     } else if (cluster == ESP_ZB_ZCL_CLUSTER_ID_COLOR_CONTROL) {
         if (attr == ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_HUE_ID) {
             s_hue = *(uint8_t *)msg->attribute.data.value;
+            ESP_LOGI(TAG, "Hue → %d", s_hue);
         } else if (attr == ESP_ZB_ZCL_ATTR_COLOR_CONTROL_CURRENT_SATURATION_ID) {
             s_sat = *(uint8_t *)msg->attribute.data.value;
+            ESP_LOGI(TAG, "Saturation → %d", s_sat);
         }
-        ESP_LOGI(TAG, "Color → hue=%d sat=%d", s_hue, s_sat);
+        // XY-цвет: координаты из cluster уже перемапятся HA в HS; не обрабатываем отдельно.
     }
 
     leds_apply();
@@ -182,81 +186,93 @@ static esp_err_t zb_attr_handler(const esp_zb_zcl_set_attr_value_message_t *msg)
 }
 
 // ---------------------------------------------------------------------------
-// Zigbee: обработчик сигналов стека
+// Zigbee: основной обработчик сигналов стека
 // ---------------------------------------------------------------------------
 static void esp_zb_app_signal_handler(esp_zb_app_signal_t *signal_s)
 {
-    uint32_t *p = signal_s->p_app_signal;
-    esp_err_t err = signal_s->esp_err_status;
-    esp_zb_app_signal_type_t sig = *p;
+    uint32_t *p_sg_p = signal_s->p_app_signal;
+    esp_err_t err    = signal_s->esp_err_status;
+    esp_zb_app_signal_type_t sig = *p_sg_p;
 
     switch (sig) {
     case ESP_ZB_ZDO_SIGNAL_SKIP_STARTUP:
-        ESP_LOGI(TAG, "Zigbee-стек инициализируется...");
+        ESP_LOGI(TAG, "Инициализация Zigbee-стека...");
         esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_INITIALIZATION);
         break;
 
     case ESP_ZB_BDB_SIGNAL_DEVICE_FIRST_START:
     case ESP_ZB_BDB_SIGNAL_DEVICE_REBOOT:
         if (err == ESP_OK) {
-            ESP_LOGI(TAG, "Устройство в сети.");
+            ESP_LOGI(TAG, "Устройство в сети. Паринг завершён.");
         } else {
-            ESP_LOGW(TAG, "Нет сети — запуск поиска...");
+            ESP_LOGW(TAG, "Нет сети — запускаем поиск (steering)...");
             esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_STEERING);
         }
         break;
 
     case ESP_ZB_BDB_SIGNAL_STEERING:
         if (err == ESP_OK) {
-            ESP_LOGI(TAG, "Подключён. PAN=0x%04hx, ch=%d",
+            esp_zb_ieee_addr_t extended_pan_id;
+            esp_zb_get_extended_pan_id(extended_pan_id);
+            ESP_LOGI(TAG, "Подключён к сети. PAN ID: 0x%04hx, ch=%d",
                      esp_zb_get_pan_id(), esp_zb_get_current_channel());
         } else {
-            ESP_LOGW(TAG, "Не нашёл сеть — повтор...");
+            ESP_LOGW(TAG, "Поиск сети не удался (err=0x%x) — повтор...", err);
             esp_zb_bdb_start_top_level_commissioning(ESP_ZB_BDB_MODE_NETWORK_STEERING);
         }
         break;
 
     default:
-        ESP_LOGD(TAG, "Сигнал: 0x%x err=0x%x", sig, err);
+        ESP_LOGD(TAG, "Сигнал ZB: 0x%x, err=0x%x", sig, err);
         break;
     }
 }
 
 // ---------------------------------------------------------------------------
-// Zigbee: задача стека (не pinned — H2 однопроцессорный)
+// Zigbee: задача стека
 // ---------------------------------------------------------------------------
 static void zigbee_task(void *arg)
 {
+    // Платформа: ZCZR (Router — питание от сети, ретранслирует пакеты)
     esp_zb_platform_config_t platform_cfg = {
         .radio_config = ESP_ZB_DEFAULT_RADIO_CONFIG(),
         .host_config  = ESP_ZB_DEFAULT_HOST_CONFIG(),
     };
     ESP_ERROR_CHECK(esp_zb_platform_config(&platform_cfg));
 
+    // Параметры сети
     esp_zb_cfg_t zb_cfg = {
-        .esp_zb_role         = ESP_ZB_DEVICE_TYPE_ROUTER,
-        .install_code_policy = false,
-        .nwk_cfg.zczr_cfg    = { .max_children = 10 },
+        .esp_zb_role              = ESP_ZB_DEVICE_TYPE_ROUTER,
+        .install_code_policy      = false,
+        .nwk_cfg.zczr_cfg = {
+            .max_children = 10,
+        },
     };
     esp_zb_init(&zb_cfg);
 
+    // --- Кластеры Color Dimmable Light ---
     esp_zb_color_dimmable_light_cfg_t light_cfg = ESP_ZB_DEFAULT_COLOR_DIMMABLE_LIGHT_CONFIG();
     esp_zb_cluster_list_t *clusters = esp_zb_color_dimmable_light_clusters_create(&light_cfg);
 
+    // --- Endpoint ---
     esp_zb_ep_list_t *ep_list = esp_zb_ep_list_create();
     esp_zb_endpoint_config_t ep_cfg = {
-        .endpoint           = ZIGBEE_ENDPOINT,
-        .app_profile_id     = ESP_ZB_AF_HA_PROFILE_ID,
-        .app_device_id      = ESP_ZB_HA_COLOR_DIMMABLE_LIGHT_DEVICE_ID,
+        .endpoint        = ZIGBEE_ENDPOINT,
+        .app_profile_id  = ESP_ZB_AF_HA_PROFILE_ID,
+        .app_device_id   = ESP_ZB_HA_COLOR_DIMMABLE_LIGHT_DEVICE_ID,
         .app_device_version = 0,
     };
     esp_zb_ep_list_add_ep(ep_list, clusters, ep_cfg);
     esp_zb_device_register(ep_list);
 
+    // --- Колбек изменения атрибутов ---
     esp_zb_core_action_handler_register(zb_attr_handler);
 
+    // --- Запуск ---
     esp_zb_set_primary_network_channel_set(ZIGBEE_CHANNEL_MASK);
     ESP_ERROR_CHECK(esp_zb_start(false));
+
+    // Главный цикл Zigbee
     esp_zb_main_loop_iteration();
     vTaskDelete(NULL);
 }
@@ -266,19 +282,23 @@ static void zigbee_task(void *arg)
 // ---------------------------------------------------------------------------
 void app_main(void)
 {
-    ESP_LOGI(TAG, "Гиммер Zigbee (ESP32-H2) boot");
+    ESP_LOGI(TAG, "Диммер Zigbee (ESP32-C6) boot");
 
+    // NVS (хранит Zigbee-конфигурацию сети)
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_LOGW(TAG, "NVS erase...");
         ESP_ERROR_CHECK(nvs_flash_erase());
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
 
+    // LED-лента
     led_strip_init_hw();
 
+    // Кнопка паринга
     xTaskCreate(pair_button_task, "pair_btn", 2048, NULL, 5, NULL);
 
-    // H2 — однопроцессорный, xTaskCreate без pinned
-    xTaskCreate(zigbee_task, "zigbee", 4096, NULL, 5, NULL);
+    // Zigbee-стек (должен работать на отдельной задаче, pinned to core 1 на C6)
+    xTaskCreatePinnedToCore(zigbee_task, "zigbee", 4096, NULL, 5, NULL, 1);
 }

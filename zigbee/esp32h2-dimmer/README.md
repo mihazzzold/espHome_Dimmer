@@ -1,11 +1,11 @@
-# ESP32-H2 Гиммер Zigbee — Color Dimmable Light
+# ESP32-H2 Диммер Zigbee — Color Dimmable Light
 
 [![Status](https://img.shields.io/badge/status-ready-green.svg)](../README.md) [![ESP-IDF](https://img.shields.io/badge/ESP--IDF-v5.2.2-blue.svg)](https://docs.espressif.com/projects/esp-idf/) [![Zigbee](https://img.shields.io/badge/Zigbee-esp--zigbee--lib%20%5E1.6.3-orange.svg)](https://github.com/espressif/esp-zigbee-sdk)
 
 Zigbee-прошивка для **адресной LED-ленты WS2812B** на **ESP32-H2 SuperMini**.
 
 > ⚠️ **ESP32-H2 не имеет Wi-Fi 802.11.** Управление только через Zigbee.  
-> Для Wi-Fi + расписание — используйте C3/C6/ESP32 с ESPHome Гиммер.
+> Для Wi-Fi + расписание — используйте C3/C6/ESP32 с ESPHome Диммер.
 
 ## Подключение
 
@@ -33,7 +33,7 @@ eim install --non-interactive true --idf-versions v5.2.2 --target esp32h2 --path
 ## Сборка и прошивка
 
 ```powershell
-cd firmwares/zigbee/esp32h2-gimmer
+cd firmwares/zigbee/esp32h2-dimmer
 eim run "idf.py set-target esp32h2" v5.2.2
 eim run "idf.py build" v5.2.2
 eim run "idf.py -p COM5 flash monitor" v5.2.2
@@ -52,5 +52,5 @@ eim run "idf.py -p COM5 flash monitor" v5.2.2
 
 ## Связанные проекты
 
-- Wi-Fi версия (ESPHome, расписание): [`firmwares/ci-overrides/mihazzzold.espHome_Gimmer/`](../../ci-overrides/mihazzzold.espHome_Gimmer/)
-- C6 Zigbee версия: [`firmwares/zigbee/esp32c6-gimmer/`](../esp32c6-gimmer/)
+- Wi-Fi версия (ESPHome, расписание): [`firmwares/ci-overrides/mihazzzold.espHome_Dimmer/`](../../ci-overrides/mihazzzold.espHome_Dimmer/)
+- C6 Zigbee версия: [`firmwares/zigbee/esp32c6-dimmer/`](../esp32c6-dimmer/)
