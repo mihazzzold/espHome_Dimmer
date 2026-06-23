@@ -5,23 +5,23 @@
    setup_* — мастер первичной настройки после добавления в HA.
    ============================================================================= #}
 {# --- DIAG / FW / OTA: как называются сущности в карточке устройства --- #}
-{% set name_diag_esphome = "ESPHome version" if _en else "DIAG: версия ESPHome" %}
-{% set name_diag_reset_reason = "Last reset reason" if _en else "RST: причина сброса" %}
-{% set name_fw_current = "Firmware (current)" if _en else "FW: прошивка сейчас" %}
-{% set name_fw_available = "Firmware (available)" if _en else "FW: прошивка в каталоге" %}
-{% set name_ota_status = "Update check status" if _en else "OTA: статус проверки" %}
-{% set name_ota_err = "OTA last error" if _en else "OTA: ошибка обновления" %}
-{% set name_btn_check_upd = "Check updates" if _en else "OTA: проверить обновления" %}
-{% set name_btn_install = "Install firmware" if _en else "OTA: установить прошивку" %}
-{% set name_fw_managed_update = "Firmware update" if _en else "OTA: обновление прошивки" %}
-{% set name_btn_factory = "Factory reset" if _en else "SYS: сброс к заводу" %}
-{% set name_diag_uptime = "Uptime" if _en else "DIAG: время работы" %}
-{% set name_diag_rssi = "Wi-Fi RSSI" if _en else "NET: уровень Wi-Fi" %}
-{% set name_diag_loop = "Main loop time" if _en else "DIAG: цикл MCU, мкс" %}
-{% set name_diag_heap = "Free heap" if _en else "DIAG: свободная куча" %}
-{% set name_net_dns = "DNS (DHCP)" if _en else "NET: DNS (по DHCP)" %}
-{% set name_diag_heap_free = "Free heap" if _en else "DIAG: heap свободно" %}
-{% set name_diag_heap_block = "Max heap block" if _en else "DIAG: heap max блок" %}
+{% set name_diag_esphome = "ESPHome version" if _en else "Версия ESPHome" %}
+{% set name_diag_reset_reason = "Last reset reason" if _en else "Причина сброса" %}
+{% set name_fw_current = "Firmware (current)" if _en else "Прошивка сейчас" %}
+{% set name_fw_available = "Firmware (available)" if _en else "Прошивка в каталоге" %}
+{% set name_ota_status = "Update check status" if _en else "Статус проверки" %}
+{% set name_ota_err = "OTA last error" if _en else "Ошибка обновления" %}
+{% set name_btn_check_upd = "Check updates" if _en else "Проверить обновления" %}
+{% set name_btn_install = "Install firmware" if _en else "Установить прошивку" %}
+{% set name_fw_managed_update = "Firmware update" if _en else "Обновление прошивки" %}
+{% set name_btn_factory = "Factory reset" if _en else "Сброс к заводу" %}
+{% set name_diag_uptime = "Uptime" if _en else "Время работы" %}
+{% set name_diag_rssi = "Wi-Fi RSSI" if _en else "Уровень Wi-Fi" %}
+{% set name_diag_loop = "Main loop time" if _en else "Цикл MCU, мкс" %}
+{% set name_diag_heap = "Free heap" if _en else "Свободная куча" %}
+{% set name_net_dns = "DNS (DHCP)" if _en else "DNS (по DHCP)" %}
+{% set name_diag_heap_free = "Free heap" if _en else "Heap свободно" %}
+{% set name_diag_heap_block = "Max heap block" if _en else "Heap max блок" %}
 {% set ota_idle = "Idle" if _en else "Ожидание" %}
 {% set ota_msg_checking = "Checking for updates..." if _en else "Проверка обновлений…" %}
 {% set ota_msg_checking_ru = "Проверка обновлений…" %}
@@ -39,9 +39,9 @@
 {% set ota_msg_check_in_progress = "Checking for updates..." if _en else "Проверка обновлений…" %}
 {% set ota_msg_check_error_detail = "TLS download interrupted (.bin; often NAT hairpin). Version from manifest may still show — check DNS ota-s3→LAN, NPM, router." if _en else "Обрыв TLS при скачивании .bin (часто NAT hairpin). Версия из manifest уже видна — проверьте DNS ota-s3→LAN, NPM, роутер." %}
 {# --- SETUP: мастер после первого подключения к HA (язык + кнопка «Завершить») --- #}
-{% set name_setup_lang = "SETUP: language · язык" %}
-{% set name_setup_status = "SETUP: wizard status" %}
-{% set name_setup_finish = "SETUP: finish wizard · завершить настройку" %}
+{% set name_setup_lang = "Язык · language" %}
+{% set name_setup_status = "Статус настройки" %}
+{% set name_setup_finish = "Завершить настройку" %}
 {% set setup_opt_lang_ru = "Русский" %}
 {% set setup_opt_lang_en = "English" %}
 {% set setup_status_pending_ru = "Нужна первичная настройка (язык и кнопка «Завершить»)" %}
