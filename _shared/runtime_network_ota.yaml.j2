@@ -28,7 +28,9 @@ captive_portal:
 
 {% if status_led_pin is defined and (use_status_led | default(true)) %}
 status_led:
-  pin: {{ status_led_pin }}
+  pin:
+    number: {{ status_led_pin }}
+    ignore_strapping_warning: true
 {% endif %}
 
 logger:

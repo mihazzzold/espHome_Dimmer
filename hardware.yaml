@@ -17,24 +17,6 @@ notes: |
     number.расписание_выключение_ч/мин  — час и минута выключения
 
 boards:
-  esp32-supermini:
-    title: "ESP32 (классический, WROOM-32)"
-    flash_connect: |
-      Micro-USB через CP2102/CH340. Framework: arduino.
-    connections:
-      - pin: GPIO13
-        role: led_data
-        label: "Data WS2812B"
-        connect: "DIN ленты → GPIO13 (через резистор 300–500 Ом)"
-      - pin: GND
-        role: power
-        label: "GND"
-        connect: "GND ленты → GND платы (общий минус)"
-      - pin: 5V/ext
-        role: power
-        label: "5V питание"
-        connect: "5V ленты → внешний БП (при > 10 LED не питать от платы)"
-
   esp32c3-supermini:
     title: "ESP32-C3 SuperMini"
     flash_connect: |

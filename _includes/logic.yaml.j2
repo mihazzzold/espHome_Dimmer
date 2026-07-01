@@ -118,6 +118,9 @@ light:
 {% endif %}
 
 script:
+{% if chip_family != "esp8266" %}
+{% include "logic_ota_platform.yaml.j2" %}
+{% endif %}
   # Проверяет расписание и переключает ленту если нужно.
   # Вызывается каждые 30 с из interval, и сразу при изменении настроек.
   - id: schedule_check
